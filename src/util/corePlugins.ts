@@ -99,6 +99,7 @@ export const swapPlugins = {
   letsexchange: ENV.LETSEXCHANGE_INIT,
   sideshift: ENV.SIDESHIFT_INIT,
   swapuz: ENV.SWAPUZ_INIT,
+  xgram: ENV.XGRAM_INIT,
 
   // Defi Swaps
   bridgeless: true,

@@ -1,5 +1,9 @@
 # edge-react-gui
 
+## Unreleased (develop)
+
+- added: Xgram swap exchange plugin support
+
 ## 4.45.0 (staging)
 
 - fixed: Fixed Zano token minting transaction detection issues.
