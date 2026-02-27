@@ -416,6 +416,10 @@ export const SettingsScene: React.FC<Props> = props => {
     navigation.navigate('swapSettings')
   })
 
+  const handleOpenDebugSettings = useHandler((): void => {
+    navigation.navigate('debugSettings')
+  })
+
   const handleSpendingLimits = useHandler(async (): Promise<void> => {
     if (await hasLock()) return
     navigation.navigate('spendingLimits')
@@ -730,6 +734,12 @@ export const SettingsScene: React.FC<Props> = props => {
                 onPress={() => {
                   navigation.navigate('giftCardAccountInfo', {})
                 }}
+              />
+            )}
+            {developerModeOn && (
+              <SettingsTappableRow
+                label={lstrings.settings_debug_title}
+                onPress={handleOpenDebugSettings}
               />
             )}
           </EdgeCard>

@@ -1,5 +1,9 @@
 # edge-react-gui
 
+## Unreleased (develop)
+
+- added: Debug settings scene (Developer Mode only) with nodes/servers inspection, engine `dataDump` viewer, and log viewer
+
 ## 4.45.0 (staging)
 
 - fixed: Fixed Zano token minting transaction detection issues.
