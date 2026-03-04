@@ -59,7 +59,10 @@ export const DebugScene: React.FC<Props> = () => {
   const styles = getStyles(theme)
   const account = useSelector(state => state.core.account)
   const currencyWallets = useWatch(account, 'currencyWallets')
-  const wallets = Object.values(currencyWallets)
+  const wallets = React.useMemo(
+    () => Object.values(currencyWallets),
+    [currencyWallets]
+  )
 
   const [showNodesAndServers, setShowNodesAndServers] = React.useState(false)
   const [showDataDump, setShowDataDump] = React.useState(false)
@@ -234,7 +237,7 @@ export const DebugScene: React.FC<Props> = () => {
     // `walletDumpMap` is shared with Nodes & Servers; that section may have
     // already loaded the dump for this wallet.
     const dumpResult = walletDumpMap[walletId]
-    if (dumpResult == null && !(loadingWallets[walletId] ?? false)) {
+    if (dumpResult?.dump == null && !(loadingWallets[walletId] ?? false)) {
       loadWalletDump(walletId)
       setWalletExpandedMap(prev => ({
         ...prev,
