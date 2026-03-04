@@ -31,18 +31,6 @@ interface DumpResult {
   error?: string
 }
 
-const formatJson = (value: unknown): string => {
-  try {
-    return JSON.stringify(value, null, 2)
-  } catch (error: unknown) {
-    return error instanceof Error ? error.message : String(error)
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Sub-components for per-wallet rows (avoids inline arrow fns in JSX)
-// ---------------------------------------------------------------------------
-
 interface NodesWalletSectionProps {
   wallet: EdgeCurrencyWallet
   dumpResult: DumpResult | undefined
@@ -52,107 +40,6 @@ interface NodesWalletSectionProps {
   onLongPress: (walletId: string) => void
 }
 
-const NodesWalletSection: React.FC<NodesWalletSectionProps> = props => {
-  const { wallet, dumpResult, isExpanded, isLoading, onToggle, onLongPress } =
-    props
-  const theme = useTheme()
-  const styles = getStyles(theme)
-
-  const handleToggle = useHandler(() => {
-    onToggle(wallet.id)
-  })
-
-  const handleLongPress = useHandler(() => {
-    onLongPress(wallet.id)
-  })
-
-  const walletLabel = `${wallet.name ?? wallet.currencyInfo.currencyCode} (${
-    wallet.currencyInfo.pluginId
-  })`
-
-  const data = dumpResult?.dump?.data
-
-  return (
-    <View>
-      <EdgeTouchableOpacity
-        style={styles.walletHeader}
-        onPress={handleToggle}
-        onLongPress={handleLongPress}
-      >
-        <EdgeText style={styles.walletTitle} numberOfLines={1}>
-          {walletLabel}
-        </EdgeText>
-        {isLoading ? (
-          <ActivityIndicator size="small" color={theme.iconTappable} />
-        ) : (
-          <Ionicons
-            name={isExpanded ? 'chevron-up' : 'chevron-down'}
-            size={theme.rem(1)}
-            color={theme.iconTappable}
-          />
-        )}
-      </EdgeTouchableOpacity>
-      {isExpanded && data != null ? (
-        <View style={styles.walletContent}>
-          <EdgeText style={styles.subLabel}>
-            {lstrings.settings_debug_defaults}
-          </EdgeText>
-          <ScrollView style={styles.jsonBox} nestedScrollEnabled>
-            <Text selectable style={styles.logText}>
-              {formatJson(data.defaultServers ?? {})}
-            </Text>
-          </ScrollView>
-
-          <EdgeText style={styles.subLabel}>
-            {lstrings.settings_debug_info_servers}
-          </EdgeText>
-          <ScrollView style={styles.jsonBox} nestedScrollEnabled>
-            <Text selectable style={styles.logText}>
-              {formatJson(data.infoServerServers ?? {})}
-            </Text>
-          </ScrollView>
-
-          <EdgeText style={styles.subLabel}>
-            {lstrings.settings_debug_custom_servers}
-          </EdgeText>
-          <ScrollView style={styles.jsonBox} nestedScrollEnabled>
-            <Text selectable style={styles.logText}>
-              {formatJson(data.customServers ?? {})}
-            </Text>
-          </ScrollView>
-
-          <EdgeText style={styles.subLabel}>
-            {lstrings.settings_debug_user_settings}
-          </EdgeText>
-          <ScrollView style={styles.jsonBox} nestedScrollEnabled>
-            <Text selectable style={styles.logText}>
-              {formatJson(wallet.currencyConfig.userSettings ?? {})}
-            </Text>
-          </ScrollView>
-
-          {data.networkConfig != null ? (
-            <>
-              <EdgeText style={styles.subLabel}>
-                {lstrings.settings_debug_network_config}
-              </EdgeText>
-              <ScrollView style={styles.jsonBox} nestedScrollEnabled>
-                <Text selectable style={styles.logText}>
-                  {formatJson(data.networkConfig)}
-                </Text>
-              </ScrollView>
-            </>
-          ) : null}
-        </View>
-      ) : null}
-      {isExpanded && dumpResult?.error != null ? (
-        <Text selectable style={styles.errorText}>
-          {dumpResult.error}
-        </Text>
-      ) : null}
-    </View>
-  )
-}
-
 interface DumpWalletRowProps {
   wallet: EdgeCurrencyWallet
   dumpResult: DumpResult | undefined
@@ -160,60 +47,6 @@ interface DumpWalletRowProps {
   isLoading: boolean
   onPress: (walletId: string) => void
   onLongPress: (walletId: string) => void
-}
-
-const DumpWalletRow: React.FC<DumpWalletRowProps> = props => {
-  const { wallet, dumpResult, isExpanded, isLoading, onPress, onLongPress } =
-    props
-  const theme = useTheme()
-  const styles = getStyles(theme)
-
-  const handlePress = useHandler(() => {
-    onPress(wallet.id)
-  })
-
-  const handleLongPress = useHandler(() => {
-    onLongPress(wallet.id)
-  })
-
-  const walletLabel = `${wallet.name ?? wallet.currencyInfo.currencyCode} (${
-    wallet.currencyInfo.pluginId
-  })`
-
-  return (
-    <View>
-      <EdgeTouchableOpacity
-        style={styles.walletHeader}
-        onPress={handlePress}
-        onLongPress={handleLongPress}
-      >
-        <EdgeText style={styles.walletTitle} numberOfLines={1}>
-          {walletLabel}
-        </EdgeText>
-        {isLoading ? (
-          <ActivityIndicator size="small" color={theme.iconTappable} />
-        ) : (
-          <Ionicons
-            name={isExpanded ? 'chevron-up' : 'chevron-down'}
-            size={theme.rem(1)}
-            color={theme.iconTappable}
-          />
-        )}
-      </EdgeTouchableOpacity>
-      {isExpanded && dumpResult?.dump != null ? (
-        <ScrollView style={styles.logBox} nestedScrollEnabled>
-          <Text selectable style={styles.logText}>
-            {formatJson(dumpResult.dump)}
-          </Text>
-        </ScrollView>
-      ) : null}
-      {isExpanded && dumpResult?.error != null ? (
-        <Text selectable style={styles.errorText}>
-          {dumpResult.error}
-        </Text>
-      ) : null}
-    </View>
-  )
 }
 
 // ---------------------------------------------------------------------------
@@ -297,9 +130,7 @@ export const DebugScene: React.FC<Props> = () => {
     for (const wallet of wallets) {
       const data = walletDumpMap[wallet.id]?.dump?.data
       if (data != null) {
-        const key = `${wallet.name ?? wallet.currencyInfo.currencyCode} (${
-          wallet.currencyInfo.pluginId
-        })`
+        const key = getWalletLabel(wallet)
         nodesData[key] = {
           defaultServers: data.defaultServers ?? {},
           infoServerServers: data.infoServerServers ?? {},
@@ -311,7 +142,11 @@ export const DebugScene: React.FC<Props> = () => {
         }
       }
     }
-    Clipboard.setString(formatJson(nodesData))
+    try {
+      Clipboard.setString(JSON.stringify(nodesData, null, 2))
+    } catch (error: unknown) {
+      showError(error)
+    }
     showToast(
       sprintf(
         lstrings.settings_debug_copied_1s,
@@ -325,13 +160,15 @@ export const DebugScene: React.FC<Props> = () => {
     for (const wallet of wallets) {
       const dump = walletDumpMap[wallet.id]?.dump
       if (dump != null) {
-        const key = `${wallet.name ?? wallet.currencyInfo.currencyCode} (${
-          wallet.currencyInfo.pluginId
-        })`
+        const key = getWalletLabel(wallet)
         dumpData[key] = dump
       }
     }
-    Clipboard.setString(formatJson(dumpData))
+    try {
+      Clipboard.setString(JSON.stringify(dumpData, null, 2))
+    } catch (error: unknown) {
+      showError(error)
+    }
     showToast(
       sprintf(
         lstrings.settings_debug_copied_1s,
@@ -392,15 +229,19 @@ export const DebugScene: React.FC<Props> = () => {
           ? { networkConfig: data.networkConfig }
           : {})
       }
-      Clipboard.setString(formatJson(content))
-      const label = `${wallet.name ?? wallet.currencyInfo.currencyCode} (${
-        wallet.currencyInfo.pluginId
-      })`
+      try {
+        Clipboard.setString(JSON.stringify(content, null, 2))
+      } catch (error: unknown) {
+        showError(error)
+      }
+      const label = getWalletLabel(wallet)
       showToast(sprintf(lstrings.settings_debug_copied_1s, label))
     }
   })
 
   const handleDumpWalletPress = useHandler((walletId: string): void => {
+    // `walletDumpMap` is shared with Nodes & Servers; that section may have
+    // already loaded the dump for this wallet.
     const dumpResult = walletDumpMap[walletId]
     if (dumpResult == null && !(loadingWallets[walletId] ?? false)) {
       loadWalletDump(walletId).catch((error: unknown) => {
@@ -422,13 +263,12 @@ export const DebugScene: React.FC<Props> = () => {
     const dump = walletDumpMap[walletId]?.dump
     if (dump != null) {
       const wallet = account.currencyWallets[walletId]
-      Clipboard.setString(formatJson(dump))
-      const label =
-        wallet != null
-          ? `${wallet.name ?? wallet.currencyInfo.currencyCode} (${
-              wallet.currencyInfo.pluginId
-            })`
-          : walletId
+      try {
+        Clipboard.setString(JSON.stringify(dump, null, 2))
+      } catch (error: unknown) {
+        showError(error)
+      }
+      const label = wallet != null ? getWalletLabel(wallet) : walletId
       showToast(sprintf(lstrings.settings_debug_copied_1s, label))
     }
   })
@@ -455,10 +295,13 @@ export const DebugScene: React.FC<Props> = () => {
         })
       }
     }
-    // Intentionally triggers only on section open. loadWalletDump is stable
-    // via useHandler; wallets/walletDumpMap are read from the current closure.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [showNodesAndServers])
+  }, [
+    loadingWallets,
+    loadWalletDump,
+    showNodesAndServers,
+    walletDumpMap,
+    wallets
+  ])
 
   React.useEffect(() => {
     if (showLogs && !logsLoadedRef.current) {
@@ -495,6 +338,11 @@ export const DebugScene: React.FC<Props> = () => {
               color={theme.iconTappable}
             />
           </EdgeTouchableOpacity>
+          {showNodesAndServers && wallets.length === 0 ? (
+            <EdgeText style={styles.emptyText}>
+              {lstrings.settings_debug_no_wallets}
+            </EdgeText>
+          ) : null}
           {showNodesAndServers
             ? wallets.map(wallet => (
                 <NodesWalletSection
@@ -639,6 +487,174 @@ export const DebugScene: React.FC<Props> = () => {
 }
 
 // ---------------------------------------------------------------------------
+// Sub-components (avoid inline arrow fns in JSX handlers)
+// ---------------------------------------------------------------------------
+
+const NodesWalletSection: React.FC<NodesWalletSectionProps> = props => {
+  const { wallet, dumpResult, isExpanded, isLoading, onToggle, onLongPress } =
+    props
+  const theme = useTheme()
+  const styles = getStyles(theme)
+
+  const handleToggle = useHandler(() => {
+    onToggle(wallet.id)
+  })
+
+  const handleLongPress = useHandler(() => {
+    onLongPress(wallet.id)
+  })
+
+  const walletLabel = getWalletLabel(wallet)
+
+  const data = dumpResult?.dump?.data
+
+  return (
+    <View>
+      <EdgeTouchableOpacity
+        style={styles.walletHeader}
+        onPress={handleToggle}
+        onLongPress={handleLongPress}
+      >
+        <EdgeText style={styles.walletTitle} numberOfLines={1}>
+          {walletLabel}
+        </EdgeText>
+        {isLoading ? (
+          <ActivityIndicator size="small" color={theme.iconTappable} />
+        ) : (
+          <Ionicons
+            name={isExpanded ? 'chevron-up' : 'chevron-down'}
+            size={theme.rem(1)}
+            color={theme.iconTappable}
+          />
+        )}
+      </EdgeTouchableOpacity>
+      {isExpanded && data != null ? (
+        <View style={styles.walletContent}>
+          <EdgeText style={styles.subLabel}>
+            {lstrings.settings_debug_defaults}
+          </EdgeText>
+          <ScrollView style={styles.jsonBox} nestedScrollEnabled>
+            <Text selectable style={styles.logText}>
+              {JSON.stringify(data.defaultServers ?? {}, null, 2)}
+            </Text>
+          </ScrollView>
+
+          <EdgeText style={styles.subLabel}>
+            {lstrings.settings_debug_info_servers}
+          </EdgeText>
+          <ScrollView style={styles.jsonBox} nestedScrollEnabled>
+            <Text selectable style={styles.logText}>
+              {JSON.stringify(data.infoServerServers ?? {}, null, 2)}
+            </Text>
+          </ScrollView>
+
+          <EdgeText style={styles.subLabel}>
+            {lstrings.settings_debug_custom_servers}
+          </EdgeText>
+          <ScrollView style={styles.jsonBox} nestedScrollEnabled>
+            <Text selectable style={styles.logText}>
+              {JSON.stringify(data.customServers ?? {}, null, 2)}
+            </Text>
+          </ScrollView>
+
+          <EdgeText style={styles.subLabel}>
+            {lstrings.settings_debug_user_settings}
+          </EdgeText>
+          <ScrollView style={styles.jsonBox} nestedScrollEnabled>
+            <Text selectable style={styles.logText}>
+              {JSON.stringify(
+                wallet.currencyConfig.userSettings ?? {},
+                null,
+                2
+              )}
+            </Text>
+          </ScrollView>
+
+          {data.networkConfig != null ? (
+            <>
+              <EdgeText style={styles.subLabel}>
+                {lstrings.settings_debug_network_config}
+              </EdgeText>
+              <ScrollView style={styles.jsonBox} nestedScrollEnabled>
+                <Text selectable style={styles.logText}>
+                  {JSON.stringify(data.networkConfig, null, 2)}
+                </Text>
+              </ScrollView>
+            </>
+          ) : null}
+        </View>
+      ) : null}
+      {isExpanded && dumpResult?.error != null ? (
+        <Text selectable style={styles.errorText}>
+          {dumpResult.error}
+        </Text>
+      ) : null}
+    </View>
+  )
+}
+
+const DumpWalletRow: React.FC<DumpWalletRowProps> = props => {
+  const { wallet, dumpResult, isExpanded, isLoading, onPress, onLongPress } =
+    props
+  const theme = useTheme()
+  const styles = getStyles(theme)
+
+  const handlePress = useHandler(() => {
+    onPress(wallet.id)
+  })
+
+  const handleLongPress = useHandler(() => {
+    onLongPress(wallet.id)
+  })
+
+  const walletLabel = getWalletLabel(wallet)
+
+  return (
+    <View>
+      <EdgeTouchableOpacity
+        style={styles.walletHeader}
+        onPress={handlePress}
+        onLongPress={handleLongPress}
+      >
+        <EdgeText style={styles.walletTitle} numberOfLines={1}>
+          {walletLabel}
+        </EdgeText>
+        {isLoading ? (
+          <ActivityIndicator size="small" color={theme.iconTappable} />
+        ) : (
+          <Ionicons
+            name={isExpanded ? 'chevron-up' : 'chevron-down'}
+            size={theme.rem(1)}
+            color={theme.iconTappable}
+          />
+        )}
+      </EdgeTouchableOpacity>
+      {isExpanded && dumpResult?.dump != null ? (
+        <ScrollView style={styles.logBox} nestedScrollEnabled>
+          <Text selectable style={styles.logText}>
+            {JSON.stringify(dumpResult.dump, null, 2)}
+          </Text>
+        </ScrollView>
+      ) : null}
+      {isExpanded && dumpResult?.error != null ? (
+        <Text selectable style={styles.errorText}>
+          {dumpResult.error}
+        </Text>
+      ) : null}
+    </View>
+  )
+}
+
+// ---------------------------------------------------------------------------
+// Utilities
+// ---------------------------------------------------------------------------
+
+const getWalletLabel = (wallet: EdgeCurrencyWallet): string =>
+  `${wallet.name ?? wallet.currencyInfo.currencyCode} (${
+    wallet.currencyInfo.pluginId
+  })`
+
+// ---------------------------------------------------------------------------
 // Styles
 // ---------------------------------------------------------------------------
 
@@ -646,13 +662,13 @@ const getStyles = cacheStyles((theme: Theme) => ({
   hintText: {
     fontSize: theme.rem(0.7),
     color: theme.deactivatedText,
-    textAlign: 'center' as const,
+    textAlign: 'center',
     paddingVertical: theme.rem(0.5)
   },
   sectionHeader: {
-    flexDirection: 'row' as const,
-    justifyContent: 'space-between' as const,
-    alignItems: 'center' as const,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     padding: theme.rem(0.75)
   },
   sectionTitle: {
@@ -660,9 +676,9 @@ const getStyles = cacheStyles((theme: Theme) => ({
     fontFamily: theme.fontFaceMedium
   },
   walletHeader: {
-    flexDirection: 'row' as const,
-    justifyContent: 'space-between' as const,
-    alignItems: 'center' as const,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     paddingVertical: theme.rem(0.5),
     paddingHorizontal: theme.rem(0.75)
   },
@@ -697,9 +713,9 @@ const getStyles = cacheStyles((theme: Theme) => ({
     color: theme.primaryText
   },
   logSubHeader: {
-    flexDirection: 'row' as const,
-    justifyContent: 'space-between' as const,
-    alignItems: 'center' as const,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     paddingVertical: theme.rem(0.5),
     paddingHorizontal: theme.rem(0.75)
   },
