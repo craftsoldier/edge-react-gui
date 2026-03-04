@@ -237,17 +237,22 @@ export const DebugScene: React.FC<Props> = () => {
     // `walletDumpMap` is shared with Nodes & Servers; that section may have
     // already loaded the dump for this wallet.
     const dumpResult = walletDumpMap[walletId]
-    if (dumpResult?.dump == null && !(loadingWallets[walletId] ?? false)) {
+    const dumpKey = `dump:${walletId}`
+    const isExpanded = walletExpandedMap[dumpKey] ?? false
+    const nextExpanded = !isExpanded
+
+    setWalletExpandedMap(prev => ({
+      ...prev,
+      [dumpKey]: nextExpanded
+    }))
+
+    // Only retry when expanding:
+    if (
+      nextExpanded &&
+      dumpResult?.dump == null &&
+      !(loadingWallets[walletId] ?? false)
+    ) {
       loadWalletDump(walletId)
-      setWalletExpandedMap(prev => ({
-        ...prev,
-        [`dump:${walletId}`]: true
-      }))
-    } else {
-      setWalletExpandedMap(prev => ({
-        ...prev,
-        [`dump:${walletId}`]: !(prev[`dump:${walletId}`] ?? false)
-      }))
     }
   })
 
