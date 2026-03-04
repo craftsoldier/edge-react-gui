@@ -149,13 +149,7 @@ export const DebugScene: React.FC<Props> = () => {
       if (data != null) {
         nodesData[wallet.id] = {
           label: getWalletLabel(wallet),
-          defaultServers: data.defaultServers ?? {},
-          infoServerServers: data.infoServerServers ?? {},
-          customServers: data.customServers ?? {},
-          userSettings: wallet.currencyConfig.userSettings ?? {},
-          ...(data.networkConfig != null
-            ? { networkConfig: data.networkConfig }
-            : {})
+          ...getNodesContent(data, wallet)
         }
       }
     }
@@ -219,17 +213,8 @@ export const DebugScene: React.FC<Props> = () => {
     const wallet = account.currencyWallets[walletId]
     const data = walletDumpMap[walletId]?.dump?.data
     if (data != null && wallet != null) {
-      const content = {
-        defaultServers: data.defaultServers ?? {},
-        infoServerServers: data.infoServerServers ?? {},
-        customServers: data.customServers ?? {},
-        userSettings: wallet.currencyConfig.userSettings ?? {},
-        ...(data.networkConfig != null
-          ? { networkConfig: data.networkConfig }
-          : {})
-      }
       const label = getWalletLabel(wallet)
-      handleCopyJson(content, label)
+      handleCopyJson(getNodesContent(data, wallet), label)
     }
   })
 
@@ -497,6 +482,7 @@ const NodesWalletSection: React.FC<NodesWalletSectionProps> = props => {
   const walletLabel = getWalletLabel(wallet)
 
   const data = dumpResult?.dump?.data
+  const pluginState = data?.pluginState as Record<string, unknown> | undefined
 
   return (
     <View>
@@ -520,32 +506,40 @@ const NodesWalletSection: React.FC<NodesWalletSectionProps> = props => {
       </EdgeTouchableOpacity>
       {isExpanded && data != null ? (
         <View style={styles.walletContent}>
-          <EdgeText style={styles.subLabel}>
-            {lstrings.settings_debug_defaults}
-          </EdgeText>
-          <ScrollView style={styles.jsonBox} nestedScrollEnabled>
-            <Text selectable style={styles.logText}>
-              {JSON.stringify(data.defaultServers ?? {}, null, 2)}
-            </Text>
-          </ScrollView>
+          {pluginState != null ? (
+            <>
+              <EdgeText style={styles.subLabel}>
+                {lstrings.settings_debug_active_servers}
+              </EdgeText>
+              <ScrollView style={styles.jsonBox} nestedScrollEnabled>
+                <Text selectable style={styles.logText}>
+                  {JSON.stringify(
+                    pluginState['pluginState.servers_'] ?? {},
+                    null,
+                    2
+                  )}
+                </Text>
+              </ScrollView>
 
-          <EdgeText style={styles.subLabel}>
-            {lstrings.settings_debug_info_servers}
-          </EdgeText>
-          <ScrollView style={styles.jsonBox} nestedScrollEnabled>
-            <Text selectable style={styles.logText}>
-              {JSON.stringify(data.infoServerServers ?? {}, null, 2)}
-            </Text>
-          </ScrollView>
+              <EdgeText style={styles.subLabel}>
+                {lstrings.settings_debug_info_servers}
+              </EdgeText>
+              <ScrollView style={styles.jsonBox} nestedScrollEnabled>
+                <Text selectable style={styles.logText}>
+                  {JSON.stringify(pluginState.infoServers ?? [], null, 2)}
+                </Text>
+              </ScrollView>
 
-          <EdgeText style={styles.subLabel}>
-            {lstrings.settings_debug_custom_servers}
-          </EdgeText>
-          <ScrollView style={styles.jsonBox} nestedScrollEnabled>
-            <Text selectable style={styles.logText}>
-              {JSON.stringify(data.customServers ?? {}, null, 2)}
-            </Text>
-          </ScrollView>
+              <EdgeText style={styles.subLabel}>
+                {lstrings.settings_debug_custom_servers}
+              </EdgeText>
+              <ScrollView style={styles.jsonBox} nestedScrollEnabled>
+                <Text selectable style={styles.logText}>
+                  {JSON.stringify(pluginState.customServers ?? [], null, 2)}
+                </Text>
+              </ScrollView>
+            </>
+          ) : null}
 
           <EdgeText style={styles.subLabel}>
             {lstrings.settings_debug_user_settings}
@@ -643,6 +637,34 @@ const getWalletLabel = (wallet: EdgeCurrencyWallet): string =>
   `${wallet.name ?? wallet.currencyInfo.currencyCode} (${
     wallet.currencyInfo.pluginId
   })`
+
+/**
+ * Build the nodes/servers content object for a wallet.
+ * UTXO wallets nest server lists under `data.pluginState`.
+ * Accountbased wallets provide `data.networkConfig` instead.
+ */
+const getNodesContent = (
+  data: Record<string, unknown>,
+  wallet: EdgeCurrencyWallet
+): Record<string, unknown> => {
+  const pluginState = data.pluginState as Record<string, unknown> | undefined
+  const content: Record<string, unknown> = {}
+
+  if (pluginState != null) {
+    content.activeServers = pluginState['pluginState.servers_'] ?? {}
+    content.infoServers = pluginState.infoServers ?? []
+    content.customServers = pluginState.customServers ?? []
+    content.enableCustomServers = pluginState.enableCustomServers ?? false
+  }
+
+  content.userSettings = wallet.currencyConfig.userSettings ?? {}
+
+  if (data.networkConfig != null) {
+    content.networkConfig = data.networkConfig
+  }
+
+  return content
+}
 
 // ---------------------------------------------------------------------------
 // Styles

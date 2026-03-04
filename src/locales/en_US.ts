@@ -518,7 +518,7 @@ const strings = {
   settings_debug_engine_dump: 'Engine dataDump',
   settings_debug_logs: 'Info/Activity Logs',
   settings_debug_refresh_logs: 'Refresh',
-  settings_debug_defaults: 'Defaults',
+  settings_debug_active_servers: 'Active Servers',
   settings_debug_info_servers: 'Info-Server Added',
   settings_debug_custom_servers: 'User Added',
   settings_debug_user_settings: 'User Settings',
