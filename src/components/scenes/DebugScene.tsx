@@ -80,24 +80,27 @@ export const DebugScene: React.FC<Props> = () => {
 
   // --- Core async operations ---
 
-  const loadWalletDump = useHandler(async (walletId: string): Promise<void> => {
+  const loadWalletDump = useHandler((walletId: string): void => {
     const wallet = account.currencyWallets[walletId]
     if (wallet == null) return
     setLoadingWallets(prev => ({ ...prev, [walletId]: true }))
-    try {
-      const dump = await wallet.dumpData()
-      setWalletDumpMap(prev => ({ ...prev, [walletId]: { dump } }))
-    } catch (error: unknown) {
-      setWalletDumpMap(prev => ({
-        ...prev,
-        [walletId]: {
-          error: error instanceof Error ? error.message : String(error)
-        }
-      }))
-      showError(error)
-    } finally {
-      setLoadingWallets(prev => ({ ...prev, [walletId]: false }))
-    }
+    wallet
+      .dumpData()
+      .then(dump => {
+        setWalletDumpMap(prev => ({ ...prev, [walletId]: { dump } }))
+      })
+      .catch((error: unknown) => {
+        setWalletDumpMap(prev => ({
+          ...prev,
+          [walletId]: {
+            error: error instanceof Error ? error.message : String(error)
+          }
+        }))
+        showError(error)
+      })
+      .finally(() => {
+        setLoadingWallets(prev => ({ ...prev, [walletId]: false }))
+      })
   })
 
   const handleRefreshLogs = useHandler(async (): Promise<void> => {
@@ -125,6 +128,15 @@ export const DebugScene: React.FC<Props> = () => {
 
   // --- Long press (copy) handlers for top-level sections ---
 
+  const handleCopyJson = useHandler((json: unknown, label: string): void => {
+    try {
+      Clipboard.setString(JSON.stringify(json, null, 2))
+      showToast(sprintf(lstrings.settings_debug_copied_1s, label))
+    } catch (error: unknown) {
+      showError(error)
+    }
+  })
+
   const handleLongPressNodesAndServers = useHandler(() => {
     const nodesData: Record<string, unknown> = {}
     for (const wallet of wallets) {
@@ -142,17 +154,7 @@ export const DebugScene: React.FC<Props> = () => {
         }
       }
     }
-    try {
-      Clipboard.setString(JSON.stringify(nodesData, null, 2))
-    } catch (error: unknown) {
-      showError(error)
-    }
-    showToast(
-      sprintf(
-        lstrings.settings_debug_copied_1s,
-        lstrings.settings_debug_nodes_servers
-      )
-    )
+    handleCopyJson(nodesData, lstrings.settings_debug_nodes_servers)
   })
 
   const handleLongPressDataDump = useHandler(() => {
@@ -164,17 +166,7 @@ export const DebugScene: React.FC<Props> = () => {
         dumpData[key] = dump
       }
     }
-    try {
-      Clipboard.setString(JSON.stringify(dumpData, null, 2))
-    } catch (error: unknown) {
-      showError(error)
-    }
-    showToast(
-      sprintf(
-        lstrings.settings_debug_copied_1s,
-        lstrings.settings_debug_engine_dump
-      )
-    )
+    handleCopyJson(dumpData, lstrings.settings_debug_engine_dump)
   })
 
   const handleLongPressLogs = useHandler(() => {
@@ -229,13 +221,8 @@ export const DebugScene: React.FC<Props> = () => {
           ? { networkConfig: data.networkConfig }
           : {})
       }
-      try {
-        Clipboard.setString(JSON.stringify(content, null, 2))
-      } catch (error: unknown) {
-        showError(error)
-      }
       const label = getWalletLabel(wallet)
-      showToast(sprintf(lstrings.settings_debug_copied_1s, label))
+      handleCopyJson(content, label)
     }
   })
 
@@ -244,9 +231,7 @@ export const DebugScene: React.FC<Props> = () => {
     // already loaded the dump for this wallet.
     const dumpResult = walletDumpMap[walletId]
     if (dumpResult == null && !(loadingWallets[walletId] ?? false)) {
-      loadWalletDump(walletId).catch((error: unknown) => {
-        showError(error)
-      })
+      loadWalletDump(walletId)
       setWalletExpandedMap(prev => ({
         ...prev,
         [`dump:${walletId}`]: true
@@ -263,13 +248,8 @@ export const DebugScene: React.FC<Props> = () => {
     const dump = walletDumpMap[walletId]?.dump
     if (dump != null) {
       const wallet = account.currencyWallets[walletId]
-      try {
-        Clipboard.setString(JSON.stringify(dump, null, 2))
-      } catch (error: unknown) {
-        showError(error)
-      }
       const label = wallet != null ? getWalletLabel(wallet) : walletId
-      showToast(sprintf(lstrings.settings_debug_copied_1s, label))
+      handleCopyJson(dump, label)
     }
   })
 
@@ -290,9 +270,7 @@ export const DebugScene: React.FC<Props> = () => {
         walletDumpMap[wallet.id] == null &&
         !(loadingWallets[wallet.id] ?? false)
       ) {
-        loadWalletDump(wallet.id).catch((error: unknown) => {
-          showError(error)
-        })
+        loadWalletDump(wallet.id)
       }
     }
   }, [
