@@ -12,6 +12,7 @@ import Ionicons from 'react-native-vector-icons/Ionicons'
 import { sprintf } from 'sprintf-js'
 
 import { useHandler } from '../../hooks/useHandler'
+import { useWatch } from '../../hooks/useWatch'
 import { lstrings } from '../../locales/strings'
 import { useSelector } from '../../types/reactRedux'
 import type { EdgeAppSceneProps } from '../../types/routerTypes'
@@ -57,7 +58,8 @@ export const DebugScene: React.FC<Props> = () => {
   const theme = useTheme()
   const styles = getStyles(theme)
   const account = useSelector(state => state.core.account)
-  const wallets = Object.values(account.currencyWallets)
+  const currencyWallets = useWatch(account, 'currencyWallets')
+  const wallets = Object.values(currencyWallets)
 
   const [showNodesAndServers, setShowNodesAndServers] = React.useState(false)
   const [showDataDump, setShowDataDump] = React.useState(false)
@@ -81,7 +83,7 @@ export const DebugScene: React.FC<Props> = () => {
   // --- Core async operations ---
 
   const loadWalletDump = useHandler((walletId: string): void => {
-    const wallet = account.currencyWallets[walletId]
+    const wallet = currencyWallets[walletId]
     if (wallet == null) return
     setLoadingWallets(prev => ({ ...prev, [walletId]: true }))
     wallet
@@ -142,8 +144,8 @@ export const DebugScene: React.FC<Props> = () => {
     for (const wallet of wallets) {
       const data = walletDumpMap[wallet.id]?.dump?.data
       if (data != null) {
-        const key = getWalletLabel(wallet)
-        nodesData[key] = {
+        nodesData[wallet.id] = {
+          label: getWalletLabel(wallet),
           defaultServers: data.defaultServers ?? {},
           infoServerServers: data.infoServerServers ?? {},
           customServers: data.customServers ?? {},
@@ -162,8 +164,10 @@ export const DebugScene: React.FC<Props> = () => {
     for (const wallet of wallets) {
       const dump = walletDumpMap[wallet.id]?.dump
       if (dump != null) {
-        const key = getWalletLabel(wallet)
-        dumpData[key] = dump
+        dumpData[wallet.id] = {
+          label: getWalletLabel(wallet),
+          dump
+        }
       }
     }
     handleCopyJson(dumpData, lstrings.settings_debug_engine_dump)
