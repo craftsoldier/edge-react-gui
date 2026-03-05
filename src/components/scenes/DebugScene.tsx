@@ -171,33 +171,45 @@ export const DebugScene: React.FC<Props> = () => {
   })
 
   const handleLongPressLogs = useHandler(() => {
-    const allLogs = `=== Info Log ===\n${logsInfo}\n\n=== Activity Log ===\n${logsActivity}`
-    Clipboard.setString(allLogs)
-    showToast(
-      sprintf(lstrings.settings_debug_copied_1s, lstrings.settings_debug_logs)
-    )
+    try {
+      const allLogs = `=== Info Log ===\n${logsInfo}\n\n=== Activity Log ===\n${logsActivity}`
+      Clipboard.setString(allLogs)
+      showToast(
+        sprintf(lstrings.settings_debug_copied_1s, lstrings.settings_debug_logs)
+      )
+    } catch (error: unknown) {
+      showError(error)
+    }
   })
 
   // --- Long press (copy) handlers for log sub-sections ---
 
   const handleLongPressInfoLog = useHandler(() => {
-    Clipboard.setString(logsInfo)
-    showToast(
-      sprintf(
-        lstrings.settings_debug_copied_1s,
-        lstrings.settings_debug_info_log
+    try {
+      Clipboard.setString(logsInfo)
+      showToast(
+        sprintf(
+          lstrings.settings_debug_copied_1s,
+          lstrings.settings_debug_info_log
+        )
       )
-    )
+    } catch (error: unknown) {
+      showError(error)
+    }
   })
 
   const handleLongPressActivityLog = useHandler(() => {
-    Clipboard.setString(logsActivity)
-    showToast(
-      sprintf(
-        lstrings.settings_debug_copied_1s,
-        lstrings.settings_debug_activity_log
+    try {
+      Clipboard.setString(logsActivity)
+      showToast(
+        sprintf(
+          lstrings.settings_debug_copied_1s,
+          lstrings.settings_debug_activity_log
+        )
       )
-    )
+    } catch (error: unknown) {
+      showError(error)
+    }
   })
 
   // --- Per-wallet handlers ---
@@ -270,18 +282,14 @@ export const DebugScene: React.FC<Props> = () => {
         loadWalletDump(wallet.id)
       }
     }
-  }, [
-    loadingWallets,
-    loadWalletDump,
-    showNodesAndServers,
-    walletDumpMap,
-    wallets
-  ])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loadWalletDump, showNodesAndServers, wallets])
 
   React.useEffect(() => {
     if (showLogs && !logsLoadedRef.current) {
       logsLoadedRef.current = true
       handleRefreshLogs().catch((error: unknown) => {
+        logsLoadedRef.current = false
         showError(error)
       })
     }
