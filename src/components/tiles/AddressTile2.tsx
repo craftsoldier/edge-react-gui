@@ -7,6 +7,7 @@ import type {
 } from 'edge-core-js'
 import { ethers } from 'ethers'
 import * as React from 'react'
+import { Linking } from 'react-native'
 import AntDesign from 'react-native-vector-icons/AntDesign'
 import FontAwesome from 'react-native-vector-icons/FontAwesome'
 import FontAwesome5 from 'react-native-vector-icons/FontAwesome5'
@@ -38,7 +39,8 @@ import {
 import { EdgeRow } from '../rows/EdgeRow'
 import { Airship, showError, showToast } from '../services/AirshipInstance'
 import { cacheStyles, type Theme, useTheme } from '../services/ThemeContext'
-import { EdgeText } from '../themed/EdgeText'
+import { EdgeText, Paragraph } from '../themed/EdgeText'
+import { MainButton } from '../themed/MainButton'
 
 export type AddressEntryMethod = 'scan' | 'other'
 
@@ -150,6 +152,7 @@ export const AddressTile2 = React.forwardRef(
         const enteredInput = address.trim()
         address = enteredInput
         let zanoAlias: string | undefined
+        let zcashMeAlias: string | undefined
         let fioAddress
         if (fioPlugin != null) {
           try {
@@ -237,7 +240,61 @@ export const AddressTile2 = React.forwardRef(
                   data.address != null &&
                   (zcashDomainMatch == null || data.address_verified === true)
                 ) {
-                  address = data.address
+                  const isVerified = data.address_verified === true
+                  const fullUsername = data.username ?? zcashMeUsername
+                  const displayName = data.display_name ?? fullUsername
+                  const profileUrl = `https://zcash.me/${fullUsername}`
+
+                  const approved = await Airship.show<boolean>(bridge => (
+                    <ConfirmContinueModal
+                      bridge={bridge}
+                      title={
+                        isVerified
+                          ? sprintf(
+                              lstrings.warning_zcashme_confirm_title,
+                              fullUsername
+                            )
+                          : sprintf(
+                              lstrings.warning_zcashme_confirm_title,
+                              fullUsername
+                            )
+                      }
+                      warning={!isVerified}
+                      isSkippable
+                      hideConfirmBody
+                    >
+                      <Paragraph>
+                        {isVerified
+                          ? sprintf(
+                              lstrings.warning_zcashme_confirm_body,
+                              displayName
+                            )
+                          : sprintf(
+                              lstrings.warning_zcashme_confirm_body,
+                              displayName
+                            )}
+                      </Paragraph>
+                      <MainButton
+                        label={sprintf(
+                          lstrings.warning_zcashme_view_profile,
+                          profileUrl
+                        )}
+                        type="secondary"
+                        marginRem={[0.5, 0]}
+                        onPress={() => {
+                          Linking.openURL(profileUrl).catch(() => {})
+                        }}
+                      />
+                    </ConfirmContinueModal>
+                  ))
+
+                  if (approved) {
+                    address = data.address
+                    zcashMeAlias = displayName
+                  } else {
+                    setLoading(false)
+                    return
+                  }
                 }
               }
             } catch (_) {}
@@ -301,7 +358,7 @@ export const AddressTile2 = React.forwardRef(
             fioAddress,
             parsedUri,
             addressEntryMethod,
-            alias: zanoAlias
+            alias: zanoAlias ?? zcashMeAlias
           })
         } catch (e: unknown) {
           const currencyInfo = coreWallet.currencyInfo

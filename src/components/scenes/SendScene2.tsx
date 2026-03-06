@@ -540,7 +540,7 @@ const SendComponent = (props: Props): React.ReactElement => {
     if (coreWallet != null && hiddenFeaturesMap.address !== true) {
       // TODO: Change API of AddressTile to access undefined recipientAddress
       const { publicAddress = '', otherParams = {} } = spendTarget
-      const { fioAddress } = otherParams
+      const { fioAddress, zanoAlias } = otherParams
       const title =
         lstrings.send_scene_send_to_address +
         (spendInfo.spendTargets.length > 1 ? ` ${(index + 1).toString()}` : '')
@@ -559,7 +559,7 @@ const SendComponent = (props: Props): React.ReactElement => {
           resetSendTransaction={handleResetSendTransaction(spendTarget)}
           lockInputs={lockTilesMap.address}
           isCameraOpen={doOpenCamera}
-          fioToAddress={fioAddress}
+          fioToAddress={fioAddress ?? zanoAlias}
           navigation={navigation as NavigationBase}
         />
       )
@@ -1307,17 +1307,20 @@ const SendComponent = (props: Props): React.ReactElement => {
           broadcastedTx = await coreWallet.broadcastTx(signedTx)
         }
 
-        // Figure out metadata (preserve Zano alias if provided)
+        // Figure out metadata (preserve alias if provided)
         let payeeName: string | undefined
         const notes: string[] = []
         const payeeFioAddresses: string[] = []
-        // Prefer explicit Zano alias if exactly one is present; otherwise fall back to default UI text
-        if (coreWallet.currencyInfo.pluginId === 'zano') {
-          const zanoAliases = spendInfo.spendTargets
+        // Prefer explicit alias if exactly one is present; otherwise fall back to default UI text
+        if (
+          coreWallet.currencyInfo.pluginId === 'zano' ||
+          coreWallet.currencyInfo.pluginId === 'zcash'
+        ) {
+          const aliases = spendInfo.spendTargets
             .map(t => t.otherParams?.zanoAlias)
             .filter((a): a is string => a != null && a.length > 0)
-          if (zanoAliases.length === 1) {
-            payeeName = zanoAliases[0]
+          if (aliases.length === 1) {
+            payeeName = aliases[0]
           }
         }
         for (const target of spendInfo.spendTargets) {

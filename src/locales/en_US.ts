@@ -152,6 +152,10 @@ const strings = {
     'The entered token already exists as a built-in token %1$s',
   warning_battery_saver: `Battery Saver Detected! Balances may not update. For the best experience, please turn off battery saver mode.`,
 
+  warning_zcashme_confirm_title: 'Sending to %1$s',
+  warning_zcashme_confirm_body:
+    '%1$s may not be the person you think. Are you sure you want to send to %1$s?',
+  warning_zcashme_view_profile: 'View Profile: %1$s',
   warning_sending_pix_to_email_title: 'Sending PIX payment to email address',
   warning_sending_pix_to_email_body:
     'You scanned or entered an email address which is a valid Brazil PIX payment address. Continuing will create a PIX payment of Tron USDT to the email address provided.',

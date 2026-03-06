@@ -18,6 +18,8 @@ interface Props {
   children?: React.ReactNode
 
   body?: string
+  checkboxLabel?: React.ReactNode
+  hideConfirmBody?: boolean
   isSkippable?: boolean
   title?: string
 
@@ -35,7 +37,9 @@ export const ConfirmContinueModal: React.FC<Props> = props => {
   const {
     bridge,
     body,
+    checkboxLabel,
     children,
+    hideConfirmBody = false,
     isSkippable = false,
     title,
     warning,
@@ -90,12 +94,18 @@ export const ConfirmContinueModal: React.FC<Props> = props => {
     >
       {children}
       {body != null ? <Paragraph>{body}</Paragraph> : null}
-      <Paragraph>{lstrings.confirm_continue_modal_body}</Paragraph>
+      {hideConfirmBody ? null : (
+        <Paragraph>{lstrings.confirm_continue_modal_body}</Paragraph>
+      )}
       <EdgeTouchableWithoutFeedback onPress={handleTogggle}>
         <View style={styles.checkBoxContainer}>
-          <EdgeText style={styles.checkboxText}>
-            {lstrings.confirm_continue_modal_button_text}
-          </EdgeText>
+          <View style={styles.checkboxLabelContainer}>
+            {checkboxLabel ?? (
+              <EdgeText style={styles.checkboxText}>
+                {lstrings.confirm_continue_modal_button_text}
+              </EdgeText>
+            )}
+          </View>
           <View
             style={[
               styles.checkCircleContainer,
@@ -148,8 +158,10 @@ const getStyles = cacheStyles((theme: Theme) => ({
   checkCircleContainerAgreed: {
     borderColor: theme.iconTappable
   },
+  checkboxLabelContainer: {
+    flex: 1
+  },
   checkboxText: {
-    flex: 1,
     fontFamily: theme.fontFaceDefault,
     fontSize: theme.rem(0.75)
   }
