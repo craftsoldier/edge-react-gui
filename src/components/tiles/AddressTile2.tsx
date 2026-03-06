@@ -213,13 +213,17 @@ export const AddressTile2 = React.forwardRef(
           }
         }
 
-        // Try resolving zcash.me username ("/username")
+        // Try resolving zcash.me username ("/username" or "zcash.me/username")
+        const zcashMeMatch =
+          /^(?:(?:https?:\/\/)?zcash\.me)?\/([a-zA-Z0-9_-]+)$/.exec(
+            enteredInput
+          )
         if (
           coreWallet.currencyInfo.pluginId === 'zcash' &&
-          /^\/[a-zA-Z0-9_-]+$/.test(enteredInput)
+          zcashMeMatch != null
         ) {
           try {
-            const username = enteredInput.slice(1)
+            const username = zcashMeMatch[1]
             const response = await fetch(
               `https://zcash.me/api/lookup/${encodeURIComponent(username)}`
             )
