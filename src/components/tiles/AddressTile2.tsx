@@ -213,25 +213,35 @@ export const AddressTile2 = React.forwardRef(
           }
         }
 
-        // Try resolving zcash.me username ("/username" or "zcash.me/username")
-        const zcashMeMatch =
-          /^(?:(?:https?:\/\/)?zcash\.me)?\/([a-zA-Z0-9_-]+)$/.exec(
+        // Try resolving zcash.me username ("/username", "zcash.me/username", or "username.zcash")
+        if (coreWallet.currencyInfo.pluginId === 'zcash') {
+          const zcashMeMatch =
+            /^(?:(?:https?:\/\/)?zcash\.me)?\/([a-zA-Z0-9_-]+)$/.exec(
+              enteredInput
+            )
+          const zcashDomainMatch = /^([a-zA-Z0-9_-]+)\.zcash$/.exec(
             enteredInput
           )
-        if (
-          coreWallet.currencyInfo.pluginId === 'zcash' &&
-          zcashMeMatch != null
-        ) {
-          try {
-            const username = zcashMeMatch[1]
-            const response = await fetch(
-              `https://zcash.me/api/lookup/${encodeURIComponent(username)}`
-            )
-            if (response.ok) {
-              const data = await response.json()
-              if (data.address != null) address = data.address
-            }
-          } catch (_) {}
+          const zcashMeUsername = zcashMeMatch?.[1] ?? zcashDomainMatch?.[1]
+          if (zcashMeUsername != null) {
+            try {
+              const response = await fetch(
+                `https://zcash.me/api/lookup/${encodeURIComponent(
+                  zcashMeUsername
+                )}`
+              )
+              if (response.ok) {
+                const data = await response.json()
+                // username.zcash format requires verified users only
+                if (
+                  data.address != null &&
+                  (zcashDomainMatch == null || data.address_verified === true)
+                ) {
+                  address = data.address
+                }
+              }
+            } catch (_) {}
+          }
         }
 
         // Preserve and resolve Zano aliases like "@alias"
