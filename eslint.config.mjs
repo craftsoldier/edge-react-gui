@@ -387,7 +387,7 @@ export default [
 
       'src/components/themed/WalletListSwipeableCurrencyRow.tsx',
       'src/components/themed/WalletListSwipeableLoadingRow.tsx',
-      'src/components/tiles/AddressTile2.tsx',
+
       'src/components/tiles/AprCard.tsx',
       'src/components/tiles/CountdownTile.tsx',
       'src/components/tiles/CryptoFiatAmountTile.tsx',

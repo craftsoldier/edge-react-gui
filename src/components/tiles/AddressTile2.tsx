@@ -213,6 +213,23 @@ export const AddressTile2 = React.forwardRef(
           }
         }
 
+        // Try resolving zcash.me username ("/username")
+        if (
+          coreWallet.currencyInfo.pluginId === 'zcash' &&
+          /^\/[a-zA-Z0-9_-]+$/.test(enteredInput)
+        ) {
+          try {
+            const username = enteredInput.slice(1)
+            const response = await fetch(
+              `https://zcash.me/api/lookup/${encodeURIComponent(username)}`
+            )
+            if (response.ok) {
+              const data = await response.json()
+              if (data.address != null) address = data.address
+            }
+          } catch (_) {}
+        }
+
         // Preserve and resolve Zano aliases like "@alias"
         if (
           coreWallet.currencyInfo.pluginId === 'zano' &&
