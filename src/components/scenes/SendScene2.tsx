@@ -428,7 +428,7 @@ const SendComponent = (props: Props): React.ReactElement => {
   const handleChangeAddress =
     (spendTarget: EdgeSpendTarget) =>
     async (changeAddressResult: ChangeAddressResult): Promise<void> => {
-      const { addressEntryMethod, parsedUri, fioAddress, alias } =
+      const { addressEntryMethod, parsedUri, fioAddress, alias, originalUri } =
         changeAddressResult
 
       if (parsedUri != null) {
@@ -469,6 +469,18 @@ const SendComponent = (props: Props): React.ReactElement => {
         spendTarget.otherParams = {
           fioAddress,
           zanoAlias: alias
+        }
+
+        // Pass full ZIP-321 URI so the native SDK handles memo correctly
+        const isZip321 =
+          originalUri != null &&
+          /^zcash:/i.test(originalUri) &&
+          /[?&]memo=/.test(originalUri)
+        if (isZip321) {
+          spendInfo.otherParams = {
+            ...spendInfo.otherParams,
+            zip321Uri: originalUri
+          }
         }
 
         // We can assume the spendTarget object came from the Component spendInfo so simply resetting the spendInfo

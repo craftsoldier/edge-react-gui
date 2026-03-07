@@ -1,7 +1,9 @@
 import type { EdgeParsedUri, EdgeTokenId } from 'edge-core-js'
 import * as React from 'react'
 import { Linking } from 'react-native'
+import { base64url } from 'rfc4648'
 import { sprintf } from 'sprintf-js'
+import URL from 'url-parse'
 
 import { ButtonsModal } from '../components/modals/ButtonsModal'
 import { ConfirmContinueModal } from '../components/modals/ConfirmContinueModal'
@@ -298,6 +300,15 @@ async function handleLink(
             .parseUri(link.uri)
             .catch((_: unknown) => undefined)
           if (parsedUri != null) {
+            // Extract ZIP-321 memo for UI display (base64url-encoded per ZIP-321 spec)
+            if (parsedUri.uniqueIdentifier == null) {
+              const { memo } = new URL(link.uri, true).query
+              if (memo != null) {
+                parsedUri.uniqueIdentifier = new TextDecoder().decode(
+                  base64url.parse(memo, { loose: true })
+                )
+              }
+            }
             const { tokenId = null } = parsedUri
             matchingWalletIdsAndUris.push({
               walletId: wallet.id,
@@ -349,7 +360,13 @@ async function handleLink(
       if (matchingWalletIdsAndUris.length === 1) {
         const { walletId, parsedUri } = matchingWalletIdsAndUris[0]
         await dispatch(
-          handleWalletUris(navigation, currencyWallets[walletId], parsedUri)
+          handleWalletUris(
+            navigation,
+            currencyWallets[walletId],
+            parsedUri,
+            undefined,
+            link.uri
+          )
         )
         break
       }
@@ -371,7 +388,24 @@ async function handleLink(
       // Re-parse the uri with the final chosen wallet
       // just in case this was a URI for a wallet we didn't have:
       const finalParsedUri = await wallet.parseUri(link.uri)
-      await dispatch(handleWalletUris(navigation, wallet, finalParsedUri))
+      // Extract ZIP-321 memo for UI display (base64url-encoded per ZIP-321 spec)
+      if (finalParsedUri.uniqueIdentifier == null) {
+        const { memo } = new URL(link.uri, true).query
+        if (memo != null) {
+          finalParsedUri.uniqueIdentifier = new TextDecoder().decode(
+            base64url.parse(memo, { loose: true })
+          )
+        }
+      }
+      await dispatch(
+        handleWalletUris(
+          navigation,
+          wallet,
+          finalParsedUri,
+          undefined,
+          link.uri
+        )
+      )
       break
     }
 

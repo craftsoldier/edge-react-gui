@@ -11,7 +11,9 @@ import { Linking } from 'react-native'
 import AntDesign from 'react-native-vector-icons/AntDesign'
 import FontAwesome from 'react-native-vector-icons/FontAwesome'
 import FontAwesome5 from 'react-native-vector-icons/FontAwesome5'
+import { base64url } from 'rfc4648'
 import { sprintf } from 'sprintf-js'
+import URL from 'url-parse'
 
 import { launchPaymentProto } from '../../actions/PaymentProtoActions'
 import { addressWarnings } from '../../actions/ScanActions'
@@ -49,6 +51,7 @@ export interface ChangeAddressResult {
   parsedUri?: EdgeParsedUri
   addressEntryMethod: AddressEntryMethod
   alias?: string
+  originalUri?: string
 }
 
 export interface AddressTileRef {
@@ -317,6 +320,17 @@ export const AddressTile2 = React.forwardRef(
         try {
           const parsedUri: EdgeParsedUri & { paymentProtocolUrl?: string } =
             await coreWallet.parseUri(address, currencyCode)
+
+          // Extract ZIP-321 memo for UI display (base64url-encoded per ZIP-321 spec)
+          if (parsedUri.uniqueIdentifier == null) {
+            const { memo } = new URL(address, true).query
+            if (memo != null) {
+              parsedUri.uniqueIdentifier = new TextDecoder().decode(
+                base64url.parse(memo, { loose: true })
+              )
+            }
+          }
+
           setLoading(false)
 
           // Check if the URI requires a warning to the user
@@ -358,7 +372,8 @@ export const AddressTile2 = React.forwardRef(
             fioAddress,
             parsedUri,
             addressEntryMethod,
-            alias: zanoAlias ?? zcashMeAlias
+            alias: zanoAlias ?? zcashMeAlias,
+            originalUri: enteredInput
           })
         } catch (e: unknown) {
           const currencyInfo = coreWallet.currencyInfo

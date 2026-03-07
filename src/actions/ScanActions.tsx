@@ -242,7 +242,8 @@ export function handleWalletUris(
   navigation: NavigationBase,
   wallet: EdgeCurrencyWallet,
   parsedUri: EdgeParsedUri,
-  fioAddress?: string
+  fioAddress?: string,
+  originalUri?: string
 ): ThunkAction<Promise<void>> {
   return async (dispatch, getState) => {
     const state = getState()
@@ -291,6 +292,10 @@ export function handleWalletUris(
       }
 
       // PUBLIC ADDRESS URI
+      const isZip321 =
+        originalUri != null &&
+        /^zcash:/i.test(originalUri) &&
+        /[?&]memo=/.test(originalUri)
       const spendInfo: EdgeSpendInfo = {
         metadata,
         spendTargets: [
@@ -302,7 +307,8 @@ export function handleWalletUris(
             nativeAmount
           }
         ],
-        tokenId
+        tokenId,
+        ...(isZip321 ? { otherParams: { zip321Uri: originalUri } } : {})
       }
 
       // React navigation doesn't like passing non-serializable objects as params. Convert date to string first

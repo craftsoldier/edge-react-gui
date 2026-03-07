@@ -100,7 +100,6 @@ export default [
       'src/actions/RecoveryReminderActions.tsx',
 
       'src/actions/ScamWarningActions.tsx',
-      'src/actions/ScanActions.tsx',
 
       'src/actions/SoundActions.ts',
       'src/actions/TokenTermsActions.tsx',
